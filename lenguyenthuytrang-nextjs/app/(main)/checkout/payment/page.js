@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../components/context/AuthContext";
-import ClientOrderService from "@/services/ClientOrderService"; 
+import ClientOrderService from "@/services/ClientOrderService";
+import ClientVnpayService from "@/services/ClientVnpayService";
 
 export default function PaymentPage() {
     const { user } = useAuth();
@@ -66,18 +67,32 @@ export default function PaymentPage() {
 
         try {
             const response = await ClientOrderService.checkout(orderPayload);
-            
+
             if (response.data.status) {
                 // 👇 BỔ SUNG ĐOẠN NÀY ĐỂ LẤY ID
-                const newOrder = response.data.order; 
-                const orderId = newOrder ? newOrder.id : null; 
+                const newOrder = response.data.order;
+                const orderId = newOrder ? newOrder.id : null;
                 // ------------------------------------
 
-                alert("Đặt hàng thành công!");
                 localStorage.removeItem('cart');
                 localStorage.removeItem('shipping_info');
                 window.dispatchEvent(new Event('cart-updated'));
-                
+
+                // Đơn hàng VNPay: lấy link thanh toán rồi chuyển hướng sang VNPay
+                if (paymentMethod === 'vnpay' && orderId) {
+                    try {
+                        const vnpRes = await ClientVnpayService.createPayment(orderId);
+                        window.location.href = vnpRes.data.payment_url;
+                        return;
+                    } catch (vnpError) {
+                        console.error("Lỗi tạo thanh toán VNPay:", vnpError);
+                        alert("Đặt hàng thành công nhưng không tạo được link thanh toán VNPay. Bạn có thể thanh toán lại từ trang chi tiết đơn hàng.");
+                        router.push(`/checkout/history/${orderId}`);
+                        return;
+                    }
+                }
+
+                alert("Đặt hàng thành công!");
                 // Bây giờ biến orderId đã tồn tại, code dưới sẽ chạy đúng
                 if (orderId) {
                     router.push(`/checkout/history/${orderId}`);
@@ -145,12 +160,12 @@ export default function PaymentPage() {
                             </label>
 
                             {/* Banking / Card */}
-                            <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === 'card' ? 'border-black bg-gray-50 ring-1 ring-black' : 'border-gray-200 hover:bg-gray-50'}`}>
-                                <input 
-                                    type="radio" 
-                                    name="payment" 
-                                    value="card" 
-                                    checked={paymentMethod === 'card'}
+                            <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === 'vnpay' ? 'border-black bg-gray-50 ring-1 ring-black' : 'border-gray-200 hover:bg-gray-50'}`}>
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    value="vnpay"
+                                    checked={paymentMethod === 'vnpay'}
                                     onChange={(e) => setPaymentMethod(e.target.value)}
                                     className="mr-3 w-5 h-5 accent-black"
                                 />

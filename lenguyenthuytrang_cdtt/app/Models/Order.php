@@ -12,7 +12,13 @@ class Order extends Model
     public $table = 'order';
     public $fillable = [
         'user_id', 'name', 'email', 'phone', 'address', 'note', 'status',
-        'created_by', 'updated_by'
+        'created_by', 'updated_by',
+        'payment_method', 'total_amount', 'payment_status', 'vnp_txn_ref', 'paid_at',
+    ];
+
+    protected $casts = [
+        'total_amount' => 'decimal:2',
+        'paid_at' => 'datetime',
     ];
     public function user()
     {

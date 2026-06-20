@@ -25,6 +25,7 @@ use App\Http\Controllers\Client\MenuController as ClientMenuController;
 use App\Http\Controllers\Client\ContactController as ClientContactController;
 use App\Http\Controllers\Client\TopicController as ClientTopicController;
 use App\Http\Controllers\Client\BannerController as ClientBannerController;
+use App\Http\Controllers\Client\VnpayController;
 
 // Product routes
 Route::get('/products', [ProductController::class, 'index']);
@@ -169,7 +170,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/client/user/orders', [ClientOrderController::class, 'index']);
     Route::get('/client/user/orders/{id}', [ClientOrderController::class, 'show']);
     Route::put('/client/user/orders/{id}/cancel', [ClientOrderController::class, 'cancelOrder']);
+
+    Route::post('/vnpay/create-payment/{orderId}', [VnpayController::class, 'createPayment']);
 });
+
+// VNPay chuyển hướng trình duyệt của người dùng / thực hiện các cuộc gọi máy chủ-đến-máy chủ , những thông tin này
+// phải được giữ công khai - vnp_SecureHash đã được xác thực là thứ xác thực chúng.
+Route::get('/vnpay/return', [VnpayController::class, 'returnUrl']);
+Route::get('/vnpay/ipn', [VnpayController::class, 'ipn']);
 
 Route::get('/email/verify/{id}/{hash}', [ClientUserController::class, 'verifyEmail'])
     ->middleware(['signed', 'throttle:6,1'])
